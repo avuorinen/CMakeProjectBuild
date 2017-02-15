@@ -6,7 +6,16 @@ Simple pipeline for building cross-platform CMake projects.
 * CMake build targets
 * Android
   * NDK-build support
-  * Android Toolchain
+  * Android Toolchain 
+  
+### TODO
+
+* Project Template
+* More Examples
+* CMake Options
+ * Auto Install
+ * Auto Clear
+ * Android Version
 
 ## Example
 
