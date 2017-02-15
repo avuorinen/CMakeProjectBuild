@@ -17,20 +17,36 @@
 # 3. This notice may not be removed or altered from any source distribution.
 
 
+# Variables: 
+# INCLUDE_DIRS
+# SOURCES
+# LIBS
+
+
 set(PB_USE_ANDROID_MK FALSE)
 
 set(PB_ANDROID_ABI "armeabi" "armeabi-v7a" "x86")
 
 macro(BuildBegin)
 
+
 	if(PB_RECURSION)
+	
+		# Back to "root"
+		get_filename_component(PARENT_DIR ${PROJECT_BINARY_DIR} DIRECTORY)
+		get_filename_component(BUILD_DIR ${PARENT_DIR} DIRECTORY)
+		message(STATUS ${BUILD_DIR})
 	
 		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+		
 	
 	elseif(ANDROID)
+	
+		set(BUILD_DIR ${PROJECT_BINARY_DIR})
 
+	
 		add_custom_target(SetupProjects)
 		add_custom_target(BuildProjects)
 
@@ -38,11 +54,18 @@ macro(BuildBegin)
 		
 		add_custom_command(TARGET SetupProjects PRE_BUILD
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/jni/")
+		
+		# Option for this.
+		#add_custom_command(TARGET SetupProjects PRE_BUILD
+		#	COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/build")			
 			
-						
 		add_custom_command(TARGET BuildProjects PRE_BUILD
 			COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/libs")
-		
+			
+		add_custom_command(TARGET BuildProjects PRE_BUILD
+			COMMAND ndk-build
+			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}")
+			
 		foreach(ABI ${PB_ANDROID_ABI})
 		
 			add_custom_command(TARGET SetupProjects PRE_BUILD
@@ -52,7 +75,7 @@ macro(BuildBegin)
 				set(PB_TARGET_GENERATOR ${CMAKE_GENERATOR})
 				
 				add_custom_command(TARGET SetupProjects PRE_BUILD
-					COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI}
+					COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI} -DOUTPUT_PATH=${PROJECT_BINARY_DIR}/libs/${ABI}
 					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/build/${ABI}/")
 				
 			else()
@@ -62,9 +85,7 @@ macro(BuildBegin)
 					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/build/${ABI}/")			
 				
 			endif()
-			
-
-				
+							
 			add_custom_command(TARGET BuildProjects PRE_BUILD
 				COMMAND cmake --build "."
 				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/build/${ABI}/")
@@ -75,6 +96,15 @@ macro(BuildBegin)
 				COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_BINARY_DIR}/build/${ABI}/lib" "${PROJECT_BINARY_DIR}/libs/${ABI}")
 								
 		endforeach()
+		
+		
+		# Option for this. (PB_Install)
+		#add_custom_command(TARGET BuildProjects POST_BUILD
+		#	COMMAND ant debug install
+		#	WORKING_DIRECTORY "${PROJECT_BINARY_DIR}")
+				
+				
+		# Support for default target.
 				
 		#add_dependencies(SetupProjects BuildProjects)
 		#add_dependencies(ALL_BUILD BuildProjects)
@@ -85,35 +115,57 @@ endmacro(BuildBegin)
 
 macro(BuildEnd)
 
-
-
 endmacro(BuildEnd)
 
-macro(BuildLibrary name type sources)
+macro(BuildNDK)
 
-	if(ANDROID AND NOT PB_RECURSION)
-
-		set(PROJECT_BUILD_USE_ANDROID_MK FALSE)
+	if(ANDROID)
 	
 		if(EXISTS "${PROJECT_SOURCE_DIR}/Android.mk")
-		
-			# Copy directory to jni directory.
-			# Add NDK building target once -> Check if NDK build is enabled.
-			# Set ${PB_LIB_PATH}
+			if(NOT PB_RECURSION)
 			
-			set(PROJECT_BUILD_USE_ANDROID_MK TRUE)
+				message(STATUS "NDK: " ${PROJECT_SOURCE_DIR})
+						
+				# Copy directory to jni directory.
+				# Add NDK building target once -> Check if NDK build is enabled.
+				# Set ${PB_LIB_PATH}
+				
+				file(COPY ${PROJECT_SOURCE_DIR} DESTINATION ${BUILD_DIR}/jni)
+				
+			
+			endif()
 						
 		return()
 		
 		endif()
-		
 	endif()
+		
+
+endmacro(BuildNDK)
+
+macro(BuildLibrary name type)
+
+	BuildNDK()
 
 	if((ANDROID AND PB_RECURSION) OR NOT ANDROID)
 	
-		add_library(${name} ${type} ${sources})
-		target_link_libraries(${name} PUBLIC ${LIBS})
+		include_directories(${INCLUDE_DIRS})
 	
+		if(${type} STREQUAL SHARED)
+			add_library(${name} SHARED ${SOURCES})
+		else()
+			add_library(${name} STATIC ${SOURCES})
+		endif()
+
+		foreach(LIB ${LIBS})
+			if(EXISTS "${BUILD_DIR}/libs/${ANDROID_ABI}/lib${LIB}.so")
+				target_link_libraries(${name} PUBLIC "${BUILD_DIR}/libs/${ANDROID_ABI}/lib${LIB}.so")
+			endif()
+		endforeach()
+					
+		target_link_libraries(${name} PUBLIC ${LIBS})
+		 
+		 
 	endif()
 	
 	if(ANDROID AND PB_RECURSION)
@@ -124,21 +176,21 @@ macro(BuildLibrary name type sources)
 		
 	endif()
 
-endmacro(BuildLibrary name type sources)
+endmacro(BuildLibrary name)
 
 
-macro(BuildApplication name sources)
+macro(BuildApplication name)
 
 if(ANDROID)
 
-	BuildLibrary(${name} SHARED ${sources})
+	BuildLibrary(${name} SHARED ${SOURCES})
 
 else()
 
-	add_executable(${name} ${sources})
+	include_directories(${INCLUDE_DIRS})
+	add_executable(${name} ${SOURCES})
 	target_link_libraries(${name} PUBLIC ${LIBS})
-
 
 endif()
 
-endmacro(BuildApplication name sources)
+endmacro(BuildApplication name)
