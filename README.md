@@ -10,11 +10,33 @@ Simple pipeline for building cross-platform CMake projects.
   
 ### Android Build
 
+#### Dependencies
+
+* Android SDK
+* Android NDK
+* Apache Ant
+* Java JRE
+* GnuWin32?
+* Ninja?
+
+#### Env
+
+* Path
+  * Android SDK/tools
+  * Android SDK/platform-tools
+  * Android NDK/build
+  * Java/jre/bin
+  * Apache Ant/bin
+  * GnuWin32? Ninja?
+
+#### CMake & Building
+
 * Unix Makefiles
 * Use android.toolchain.cmake
 * **TEMP:**
 * make SetupProjects -j
 * make BuildProjects -j
+
 
 ### TODO
 
