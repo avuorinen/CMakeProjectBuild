@@ -8,8 +8,17 @@ Simple pipeline for building cross-platform CMake projects.
   * NDK-build support
   * Android Toolchain 
   
+### Android Build
+
+* Unix Makefiles
+* Use android.toolchain.cmake
+* **TEMP:**
+* make SetupProjects -j
+* make BuildProjects -j
+
 ### TODO
 
+* Default BuildTarget
 * Project Template
 * More Examples
 * CMake Options
@@ -63,3 +72,4 @@ file(GLOB LIB_SRC ${APP_SOURCE_DIR}/*.c ${APP_SOURCE_DIR}/*.h)
 # Modified add_library.
 BuildLibrary(Library SHARED ${LIB_SRC})
 ```
+

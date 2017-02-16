@@ -57,7 +57,7 @@ macro(BuildBegin)
 		
 		# Option for this.
 		#add_custom_command(TARGET SetupProjects PRE_BUILD
-		#	COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/build")			
+		#	COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/obj")			
 			
 		add_custom_command(TARGET BuildProjects PRE_BUILD
 			COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/libs")
@@ -69,31 +69,35 @@ macro(BuildBegin)
 		foreach(ABI ${PB_ANDROID_ABI})
 		
 			add_custom_command(TARGET SetupProjects PRE_BUILD
-				COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/build/${ABI}/")
+				COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 				
 			if(PB_DEBUG)
 				set(PB_TARGET_GENERATOR ${CMAKE_GENERATOR})
 				
 				add_custom_command(TARGET SetupProjects PRE_BUILD
 					COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI} -DOUTPUT_PATH=${PROJECT_BINARY_DIR}/libs/${ABI}
-					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/build/${ABI}/")
+					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 				
 			else()
 
 				add_custom_command(TARGET SetupProjects PRE_BUILD
 					COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI}
-					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/build/${ABI}/")			
+					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")			
 				
 			endif()
+			
+			add_custom_command(TARGET BuildProjects PRE_BUILD
+				COMMAND cmake "."
+				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 							
 			add_custom_command(TARGET BuildProjects PRE_BUILD
 				COMMAND cmake --build "."
-				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/build/${ABI}/")
+				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 				
 			# Copy lib folder content to jni/libs/${ABI}/
 			
 			add_custom_command(TARGET BuildProjects PRE_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_BINARY_DIR}/build/${ABI}/lib" "${PROJECT_BINARY_DIR}/libs/${ABI}")
+				COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_BINARY_DIR}/obj/${ABI}/lib" "${PROJECT_BINARY_DIR}/libs/${ABI}")
 								
 		endforeach()
 		
@@ -113,10 +117,6 @@ macro(BuildBegin)
 
 endmacro(BuildBegin)
 
-macro(BuildEnd)
-
-endmacro(BuildEnd)
-
 macro(BuildNDK)
 
 	if(ANDROID)
@@ -125,14 +125,8 @@ macro(BuildNDK)
 			if(NOT PB_RECURSION)
 			
 				message(STATUS "NDK: " ${PROJECT_SOURCE_DIR})
-						
-				# Copy directory to jni directory.
-				# Add NDK building target once -> Check if NDK build is enabled.
-				# Set ${PB_LIB_PATH}
-				
 				file(COPY ${PROJECT_SOURCE_DIR} DESTINATION ${BUILD_DIR}/jni)
-				
-			
+							
 			endif()
 						
 		return()
@@ -168,14 +162,6 @@ macro(BuildLibrary name type)
 		 
 	endif()
 	
-	if(ANDROID AND PB_RECURSION)
-	
-		# Add Custom Build rules
-		# ${ANDROID_ABI} # Use this as folder name.
-		# list(APPEND CMAKE_CXX_FLAGS " --sysroot=${ANDROID_SYSROOT}")
-		
-	endif()
-
 endmacro(BuildLibrary name)
 
 
