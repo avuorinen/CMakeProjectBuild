@@ -61,7 +61,7 @@ macro(BuildBegin)
 		
 		set_property(TARGET ProjectSetup ProjectBuild ProjectRun PROPERTY FOLDER ProjectBuild)
 		
-		if(EXISTS "${PB_ANDROID_TEMPLATE}/build.xml" AND NOT "${BUILD_DIR}/android/build.xml")
+		if(EXISTS "${PB_ANDROID_TEMPLATE}/build.xml" AND NOT EXISTS "${BUILD_DIR}/android/build.xml")
 			
 			file(REMOVE_RECURSE "${BUILD_DIR}/android")
 			get_filename_component(TEMPLATE_NAME ${PB_ANDROID_TEMPLATE} NAME)

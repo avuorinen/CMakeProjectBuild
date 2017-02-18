@@ -1,13 +1,48 @@
 # CMakeProjectBuild
 Simple pipeline for building cross-platform CMake projects.
 
+## Variables
+
+| Variable      				| Description       										|
+| :-----------------------------|:------------------------------------------------------|
+| SOURCES   	   				| Source files											|
+| INCLUDES      				| Include Directories      								|
+| LIBS							| Libraries, use CMake targets      					|
+| DEFINES						| Public Defines										|
+| DEFINES_PRIVATE 				| Private Defines										|
+
+## Commands
+
+| Command						| Description											|
+| :-----------------------------|:------------------------------------------------------|
+| BuildBegin()					| Adds custom build targets								|
+| BuildNDK()					| Uses Android.mk file instead of CMake					|
+| BuildIgnore()					| Skips CMake file										|
+| BuildLibrary(NAME TYPE)		| Builds Library										|
+| BuildApplication(NAME)		| Builds Application (Shared Library for Android)		|
+
+### Custom Build Targets
+
+* ProjectSetup
+* ProjectBuild
+* ProjectRun
+
 ## Features
 
+* Visual Studio support
 * CMake build targets
 * Android
-  * NDK-build support
-  * Android Toolchain 
-  
+    * NDK-build support
+    * Android Toolchain
+
+### TODO
+
+  * Examples
+    * Example Project
+  * CMake Options
+    * Android Version
+  * Passing CMake variables
+
 ### Android Build
 
 #### Dependencies
@@ -16,37 +51,28 @@ Simple pipeline for building cross-platform CMake projects.
 * Android NDK
 * Apache Ant
 * Java JRE
-* GnuWin32?
-* Ninja?
+* Make
+    * example: GnuWin32
+* GCC Compiler (optional)
+    * Helps with Unix Makefiles
 
 #### Env
 
+* ANDROID_NDK
 * Path
-  * Android SDK/tools
-  * Android SDK/platform-tools
-  * Android NDK/build
-  * Java/jre/bin
-  * Apache Ant/bin
-  * GnuWin32? Ninja?
+    * Android SDK/tools
+    * Android SDK/platform-tools
+    * Android NDK/build
+    * Java/jre/bin
+    * Apache Ant/bin
+    * Make
+    * GCC Compiler (optional)
 
 #### CMake & Building
 
 * Unix Makefiles
 * Use android.toolchain.cmake
-* **TEMP:**
-* make SetupProjects -j
-* make BuildProjects -j
-
-
-### TODO
-
-* Default BuildTarget
-* Project Template
-* More Examples
-* CMake Options
- * Auto Install
- * Auto Clear
- * Android Version
+* make -j
 
 ## Example
 
@@ -63,6 +89,7 @@ Project Root
         |-- Lib.c
 </pre>
 
+
 ### Project Root CMakeLists.txt
 
 ``` CMake
@@ -77,11 +104,13 @@ BuildBegin()
 
 add_subdirectory(Library)
 
+set(SOURCES Main.c)
+
 # Libraries for linking.
 set(LIBS Library)
 
 # Modified add_executable.
-BuildApplication(Example Main.c)
+BuildApplication(Example)
 
 ```
 
@@ -89,9 +118,8 @@ BuildApplication(Example Main.c)
 
 ``` CMake
 project(LIBRARY C)
-file(GLOB LIB_SRC ${APP_SOURCE_DIR}/*.c ${APP_SOURCE_DIR}/*.h)
+file(GLOB SOURCES ${APP_SOURCE_DIR}/*.c ${APP_SOURCE_DIR}/*.h)
 
 # Modified add_library.
-BuildLibrary(Library SHARED ${LIB_SRC})
+BuildLibrary(Library SHARED)
 ```
-
