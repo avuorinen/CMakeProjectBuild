@@ -38,105 +38,122 @@ set(PB_TARGET_GENERATOR "Unix Makefiles" CACHE STRING "")
 
 macro(BuildBegin)
 
-
-	if(PB_RECURSION)
-	
-		# Back to "root"
-		get_filename_component(PARENT_DIR ${PROJECT_BINARY_DIR} DIRECTORY)
-		get_filename_component(BUILD_DIR ${PARENT_DIR} DIRECTORY)
-		message(STATUS ${BUILD_DIR})
-	
-		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+		if(PB_RECURSION)
 		
-	
-	elseif(PB_ANDROID OR ANDROID)
-	
-		set(BUILD_DIR ${PROJECT_BINARY_DIR})
-
-		add_custom_target(ProjectSetup)
-		add_custom_target(ProjectBuild)
-		add_custom_target(ProjectRun)
+			# Back to "root"
+			get_filename_component(PARENT_DIR ${PROJECT_BINARY_DIR} DIRECTORY)
+			get_filename_component(BUILD_DIR ${PARENT_DIR} DIRECTORY)
+			message(STATUS ${BUILD_DIR})
 		
-		set_property(TARGET ProjectSetup ProjectBuild ProjectRun PROPERTY FOLDER ProjectBuild)
-		
-		if(EXISTS "${PB_ANDROID_TEMPLATE}/build.xml" AND NOT EXISTS "${BUILD_DIR}/android/build.xml")
+			set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+			set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+			set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 			
-			file(REMOVE_RECURSE "${BUILD_DIR}/android")
-			get_filename_component(TEMPLATE_NAME ${PB_ANDROID_TEMPLATE} NAME)
-			file(COPY ${PB_ANDROID_TEMPLATE} DESTINATION ${BUILD_DIR})
-			file(RENAME "${BUILD_DIR}/${TEMPLATE_NAME}" "${BUILD_DIR}/android")
+		
+		elseif(PB_ANDROID OR ANDROID)
+		
+			set(BUILD_DIR ${PROJECT_BINARY_DIR})
 
-		
-		endif()
-		
-		add_custom_command(TARGET ProjectSetup PRE_BUILD
-			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/android/jni/")
-		
-		# Option for this.
-		#add_custom_command(TARGET ProjectSetup PRE_BUILD
-		#	COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/obj")			
+			add_custom_target(ProjectSetup)
+			add_custom_target(ProjectBuild)
+			add_custom_target(ProjectRun)
 			
-		add_custom_command(TARGET ProjectBuild PRE_BUILD
-			COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/android/libs")
-			
-		if(PB_ANDROID_NDK)
-			add_custom_command(TARGET ProjectBuild PRE_BUILD
-				COMMAND ndk-build
-				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/android")
-		endif()
-						
-		foreach(ABI ${PB_ANDROID_ABI})
-		
-			add_custom_command(TARGET ProjectSetup PRE_BUILD
-				COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/obj/${ABI}/")
-				
-			if(PB_DEBUG)
-				set(PB_TARGET_GENERATOR ${CMAKE_GENERATOR})
-				
-				add_custom_command(TARGET ProjectSetup PRE_BUILD
-					COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI} -DOUTPUT_PATH=${PROJECT_BINARY_DIR}/libs/${ABI}
-					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
-			else()
+			if(PB_ANDROID_NDK)
 
-				add_custom_command(TARGET ProjectSetup PRE_BUILD
-					COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DCMAKE_TOOLCHAIN_FILE=${PB_TOOLCHAIN} -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI}
-					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")			
+				add_custom_target(ProjectBuildNDK)
+			
+			endif()
+					
+			if(EXISTS "${PB_ANDROID_TEMPLATE}/build.xml" AND NOT EXISTS "${BUILD_DIR}/android/build.xml")
 				
+				file(REMOVE_RECURSE "${BUILD_DIR}/android")
+				get_filename_component(TEMPLATE_NAME ${PB_ANDROID_TEMPLATE} NAME)
+				file(COPY ${PB_ANDROID_TEMPLATE} DESTINATION ${BUILD_DIR})
+				file(RENAME "${BUILD_DIR}/${TEMPLATE_NAME}" "${BUILD_DIR}/android")
+
+			
 			endif()
 			
-			add_custom_command(TARGET ProjectBuild PRE_BUILD
-				COMMAND cmake "."
-				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
+			add_custom_command(TARGET ProjectSetup PRE_BUILD
+				COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/android/jni/")
+			
+			# Option for this.
+			#add_custom_command(TARGET ProjectSetup PRE_BUILD
+			#	COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/obj")			
+				
+			add_custom_command(TARGET ProjectSetup PRE_BUILD
+				COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/android/libs")
+				
+			if(PB_ANDROID_NDK)
+				add_custom_command(TARGET ProjectBuildNDK PRE_BUILD
+					COMMAND ndk-build
+					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/android")
+			endif()
 							
-			add_custom_command(TARGET ProjectBuild PRE_BUILD
-				COMMAND cmake --build "."
-				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
-				
-			add_custom_command(TARGET ProjectBuild PRE_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_BINARY_DIR}/obj/${ABI}/lib" "${PROJECT_BINARY_DIR}/android/libs/${ABI}")
-								
-		endforeach()
-		
-		
-		# Option for this. (PB_Install)
-		add_custom_command(TARGET ProjectRun POST_BUILD
-			COMMAND ant debug install
-			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/android")
-				
-				
-		# Support for default target.
-		
-		add_dependencies(ProjectBuild ProjectSetup)
-		add_dependencies(ProjectRun ProjectBuild)
-		
-		add_library(ProjectBuildHook SHARED)
-		message(STATUS "PB INFO: Don't bother about above warning about ProjectBuildHook, that is intended dirty hack for Make.")
-		set_target_properties(ProjectBuildHook PROPERTIES LINKER_LANGUAGE CXX)
-		add_dependencies(ProjectBuildHook ProjectBuild)
+			foreach(ABI ${PB_ANDROID_ABI})
+			
+				add_custom_command(TARGET ProjectSetup PRE_BUILD
+					COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/obj/${ABI}/")
+					
+				if(PB_DEBUG)
+					set(PB_TARGET_GENERATOR ${CMAKE_GENERATOR})
+					
+					add_custom_command(TARGET ProjectSetup PRE_BUILD
+						COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI} -DOUTPUT_PATH=${PROJECT_BINARY_DIR}/libs/${ABI}
+						WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
+				else()
 
-	endif()
+					add_custom_command(TARGET ProjectSetup PRE_BUILD
+						COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DCMAKE_TOOLCHAIN_FILE=${PB_TOOLCHAIN} -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI}
+						WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")			
+					
+				endif()
+				
+				add_custom_command(TARGET ProjectBuild PRE_BUILD
+					COMMAND cmake "."
+					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
+								
+				add_custom_command(TARGET ProjectBuild PRE_BUILD
+					COMMAND cmake --build "."
+					WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
+					
+				add_custom_command(TARGET ProjectBuild PRE_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_BINARY_DIR}/obj/${ABI}/lib" "${PROJECT_BINARY_DIR}/android/libs/${ABI}")
+									
+			endforeach()
+			
+			
+			# Option for this. (PB_Install)
+			add_custom_command(TARGET ProjectRun POST_BUILD
+				COMMAND ant debug install
+				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/android")
+					
+					
+			# Support for default target.
+			
+			
+			if(PB_ANDROID_NDK)
+				add_dependencies(ProjectBuildNDK ProjectSetup)
+				add_dependencies(ProjectBuild ProjectBuildNDK)
+				
+				set_property(TARGET ProjectBuildNDK PROPERTY FOLDER ProjectBuild)
+
+			else()
+				add_dependencies(ProjectBuild ProjectSetup)
+			
+			endif()
+			
+			add_dependencies(ProjectRun ProjectBuild)
+			
+			add_library(ProjectBuildHook SHARED)
+			message(STATUS "PB INFO: Don't bother about above warning about ProjectBuildHook, that is intended dirty hack for Make.")
+			set_target_properties(ProjectBuildHook PROPERTIES LINKER_LANGUAGE CXX)
+			add_dependencies(ProjectBuildHook ProjectBuild)
+			
+			set_property(TARGET ProjectSetup ProjectBuild ProjectRun ProjectBuildHook PROPERTY FOLDER ProjectBuild)
+
+
+		endif()
 
 endmacro(BuildBegin)
 
