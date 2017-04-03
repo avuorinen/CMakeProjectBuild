@@ -15,7 +15,7 @@ Simple pipeline for building cross-platform CMake projects.
 ### ARGS
 | Command                       | Args                          | Description                |
 | :-----------------------------|:------------------------------|:---------------------------|
-| BuildApplication              | Win32                         | WinMain Entry              |
+| BuildApplication              | WIN32                         | WinMain Entry              |
 |                               | MACOSX_BUNDLE                 | OS X Application Bundle    |
 |                               | EXCLUDE_FROM_ALL              |                            |
 
