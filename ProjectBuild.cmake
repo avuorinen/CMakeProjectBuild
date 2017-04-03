@@ -23,6 +23,7 @@
 # LIBS
 # DEFINES
 # DEFINES_PRIVATE
+# ARGS
 
 set(PB_USE_ANDROID_MK FALSE)
 set(PB_ANDROID_ABI "armeabi" "armeabi-v7a" "x86")
@@ -242,7 +243,7 @@ if(ANDROID AND NOT PB_FORCE_PROJECT)
 else()
 
 	BuildTargetBegin(${name})
-	add_executable(${name} ${SOURCES})
+	add_executable(${name} ${ARGS} ${SOURCES})
 	BuildTargetEnd(${name})
 
 endif()

@@ -3,23 +3,35 @@ Simple pipeline for building cross-platform CMake projects.
 
 ## Variables
 
-| Variable      				| Description       										|
+| Variable      		| Description       							|				|
 | :-----------------------------|:------------------------------------------------------|
-| SOURCES   	   				| Source files											|
-| INCLUDES      				| Include Directories      								|
-| LIBS							| Libraries, use CMake targets      					|
-| DEFINES						| Public Defines										|
-| DEFINES_PRIVATE 				| Private Defines										|
+| SOURCES   	   		| Source files								|				|
+| INCLUDES      		| Include Directories      						|				|
+| LIBS				| Libraries, use CMake targets      					|				|
+| DEFINES			| Public Defines							|				|
+| DEFINES_PRIVATE 		| Private Defines							|				|
+| ARGS				| Arguments for BuildApplication. (Will be added for the BuildLibrary command.)
+
+### ARGS
+| Command			| Args				| Description				|				|				|
+| :-----------------------------|:------------------------------|:----------------------|
+| BuildApplication		| Win32				| WinMain Entry				|				| MACOSX_BUNDLE			| OS X Application Bundle
+|				| EXCLUDE_FROM_ALL		|
+|				|				|
+
+
 
 ## Commands
 
-| Command						| Description											|
+| Command			| Description								|				|
 | :-----------------------------|:------------------------------------------------------|
-| BuildBegin()					| Adds custom build targets								|
-| BuildNDK()					| Uses Android.mk file instead of CMake					|
-| BuildIgnore()					| Skips CMake file										|
-| BuildLibrary(NAME TYPE)		| Builds Library										|
-| BuildApplication(NAME)		| Builds Application (Shared Library for Android)		|
+| BuildBegin()			| Adds custom build targets						|				|
+| BuildNDK()			| Uses Android.mk file instead of CMake					|				|
+| BuildIgnore()			| Skips CMake file							|				|
+| BuildLibrary(NAME TYPE)	| Builds Library							|				|
+| BuildApplication(NAME)	| Builds Application (Shared Library for Android)		
+|				|
+
 
 ### Custom Build Targets
 
