@@ -69,6 +69,7 @@ Simple pipeline for building cross-platform CMake projects.
 
 * ANDROID_NDK
 * Path
+    * CMake 
     * Android SDK/tools
     * Android SDK/platform-tools
     * Android NDK/build
