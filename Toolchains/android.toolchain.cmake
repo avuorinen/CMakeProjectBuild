@@ -1039,19 +1039,32 @@ if( BUILD_WITH_ANDROID_NDK )
    set( __libstl                "${__libstl}/libs/${ANDROID_NDK_ABI_NAME}/libstdc++.a" )
   endif()
 
- elseif(ANDROID_STL MATCHES "c++_static")
-      set( ANDROID_STL_INCLUDE_DIRS "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libcxx/include" )
+ elseif(ANDROID_STL STREQUAL "c++_static")
+      set( ANDROID_STL_INCLUDE_DIRS
+                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libcxx/include"
+                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/include"
+                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/libcxxabi/include"
+                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/include"
+                        "${ANDROID_NDK}/sources/android/support/include"
+      )
+
       set( __libstl
                         "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++.a"
                         "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++_shared.a"
                         "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++abi.a"
       )
 
- elseif(ANDROID_STL MATCHES "c++_shared")
-     set( ANDROID_STL_INCLUDE_DIRS "${ANDROID_NDK}/sources/cxx-stl/llbm-libc++/libcxx/include" )
+ elseif(ANDROID_STL STREQUAL "c++_shared")
+     set( ANDROID_STL_INCLUDE_DIRS
+                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libcxx/include"
+                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/include"
+                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/libcxxabi/include"
+                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/include"
+                        "${ANDROID_NDK}/sources/android/support/include"
+     )
 
      set( __libstl
-                       "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++.so" 
+                       "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++.so"
                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++_shared.so"
                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++abi.a"
      )
