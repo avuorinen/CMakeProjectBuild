@@ -3,32 +3,23 @@ Simple pipeline for building cross-platform CMake projects.
 
 ## Variables
 
-| Variable                      | Description                                                |
-| :-----------------------------|:-----------------------------------------------------------|
-| SOURCES                       | Source files                                               |
-| INCLUDES                      | Include Directories                                        |
-| LIBS                          | Libraries, use CMake targets                               |
-| DEFINES			              | Public Defines                                             |
-| DEFINES_PRIVATE 		        | Private Defines                                            |
-| ARGS				              | Arguments for BuildApplication. (Will be added for the BuildLibrary command.) |
-
-### ARGS
-| Command                       | Args                          | Description                |
-| :-----------------------------|:------------------------------|:---------------------------|
-| BuildApplication              | WIN32                         | WinMain Entry              |
-|                               | MACOSX_BUNDLE                 | OS X Application Bundle    |
-|                               | EXCLUDE_FROM_ALL              |                            |
+| Variable        | Description                  |
+| :-------------- | :--------------------------- |
+| SOURCES         | Source files                 |
+| INCLUDES        | Include Directories          |
+| LIBS            | Libraries, use CMake targets |
+| DEFINES         | Public Defines               |
+| DEFINES_PRIVATE | Private Defines              |
 
 ## Commands
 
-| Command                       | Description                                                |
-| :-----------------------------|:-----------------------------------------------------------|
-| BuildBegin()                  | Adds custom build targets                                  |
-| BuildNDK()                    | Uses Android.mk file instead of CMake                      |
-| BuildIgnore()                 | Skips CMake file                                           |
-| BuildLibrary(NAME TYPE)       | Builds Library                                             |
-| BuildApplication(NAME)        | Builds Application (Shared Library for Android)            |
-
+| Command                 | Description                                     |
+| :---------------------- | :---------------------------------------------- |
+| BuildBegin()            | Adds custom build targets                       |
+| BuildNDK()              | Uses Android.mk file instead of CMake           |
+| BuildIgnore()           | Skips CMake file                                |
+| BuildLibrary(NAME TYPE) | Builds Library                                  |
+| BuildApplication(NAME)  | Builds Application (Shared Library for Android) |
 
 ### Custom Build Targets
 
@@ -51,6 +42,10 @@ Simple pipeline for building cross-platform CMake projects.
   * CMake Options
     * Android Version
   * Passing CMake variables
+  * Callbacks
+
+  [Android Builidng](templates/Android/README.md)
+
 
 ### Android Build
 
@@ -58,7 +53,7 @@ Simple pipeline for building cross-platform CMake projects.
 
 * Android SDK
 * Android NDK
-* Apache Ant
+* **Apache Ant** or **Gradle**
 * Java JRE
 * Make
     * example: GnuWin32
@@ -69,7 +64,6 @@ Simple pipeline for building cross-platform CMake projects.
 
 * ANDROID_NDK
 * Path
-    * CMake 
     * Android SDK/tools
     * Android SDK/platform-tools
     * Android NDK/build
@@ -90,17 +84,16 @@ Simple pipeline for building cross-platform CMake projects.
 Project Root
 |-- CMakeLists.txt
 |-- src
-    |-- Main.c
+    |-- main.c
 |-- Library
     |-- CMakeLists.txt
     |-- include
-        |-- Lib.h
+        |-- lib.h
     |-- src
-        |-- Lib.c
+        |-- lib.c
 </pre>
 
-
-### Project Root CMakeLists.txt
+### Project Root/CMakeLists.txt
 
 ``` CMake
 cmake_minimum_required(VERSION 2.8)
@@ -114,17 +107,18 @@ BuildBegin()
 
 add_subdirectory(Library)
 
-set(SOURCES Main.c)
+set(SOURCES main.c)
 
 # Libraries for linking.
 set(LIBS Library)
 
 # Modified add_executable.
 BuildApplication(Example)
-
 ```
 
-### Library CMakeLists.txt
+
+
+### Project Root/Library/CMakeLists.txt
 
 ``` CMake
 project(LIBRARY C)
