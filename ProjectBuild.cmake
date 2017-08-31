@@ -63,13 +63,20 @@ set(PB_RECURSION_CXX_FLAGS CACHE STRING "")
 set(PB_RECURSION_C_FLAGS CACHE STRING "")
 
 set(PB_ANDROID_API "9" CACHE STRING "Android API LEVEL")
-set(PB_ANDROID_STL "gnustl_static" CACHE STRING "Android STL") # Use c++_static instead. (when working)
 
 set(ANDROID_STL_VALUES
 	"none;system;system_re;gabi++_static;gabi++_shared;stlport_static;stlport_shared;gnustl_static;gnustl_shared;c++_static;c++_shared;"
 )
 
+set(PB_ANDROID_STL "gnustl_static" CACHE STRING "Android STL") # Use c++_static instead. (when working)
 set_property(CACHE PB_ANDROID_STL PROPERTY STRINGS ${ANDROID_STL_VALUES})
+
+set(ANDROID_BUILD_SYSTEMS
+	"ant debug install;gradlew installDebug;"
+)
+
+set(PB_ANDROID_BUILD_SYSTEM "gradlew installDebug" CACHE STRING "Android Build System")
+set_property(CACHE PB_ANDROID_BUILD_SYSTEM PROPERTY STRINGS ${ANDROID_BUILD_SYSTEMS})
 
 
 ##########
@@ -250,7 +257,7 @@ macro(BuildAndroid)
 		add_custom_target(ProjectBuildNDK)
 	endif()
 
-	if(EXISTS "${PB_ANDROID_TEMPLATE}/build.xml" AND NOT EXISTS "${BUILD_DIR}/android/build.xml")
+	if(EXISTS "${PB_ANDROID_TEMPLATE}/AndroidManifest.xml" AND NOT EXISTS "${BUILD_DIR}/android/AndroidManifest.xml")
 
 		file(REMOVE_RECURSE "${BUILD_DIR}/android")
 		get_filename_component(TEMPLATE_NAME ${PB_ANDROID_TEMPLATE} NAME)
@@ -260,17 +267,19 @@ macro(BuildAndroid)
 	endif()
 
 	add_custom_command(TARGET ProjectSetup PRE_BUILD
-		COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/android/jni/")
+		COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Initializing projects..."
+		COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/android/jni/"
+		COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/android/libs"
+	)
 
 	# Option for this.
 	#add_custom_command(TARGET ProjectSetup PRE_BUILD
 	#	COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/obj")
 
-	add_custom_command(TARGET ProjectSetup PRE_BUILD
-		COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/android/libs")
 
 	if(PB_ANDROID_NDK)
 		add_custom_command(TARGET ProjectBuildNDK PRE_BUILD
+			COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Starting NDK building..."
 			COMMAND ndk-build
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/android")
 	endif()
@@ -298,10 +307,12 @@ macro(BuildAndroid)
 		endif()
 
 		add_custom_command(TARGET ProjectBuild PRE_BUILD
+			COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Updating projects..."
 			COMMAND cmake "."
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 
 		add_custom_command(TARGET ProjectBuild PRE_BUILD
+			COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Starting building..."
 			COMMAND cmake --build "."
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 
@@ -311,15 +322,16 @@ macro(BuildAndroid)
 	endforeach()
 
 	# Option for this. (PB_Install)
+	SEPARATE_ARGUMENTS(PB_ANDROID_BUILD_SYSTEM)
 	add_custom_command(TARGET ProjectRun POST_BUILD
-		COMMAND ant debug install
+		COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Starting project..."
+		COMMAND ${PB_ANDROID_BUILD_SYSTEM}
 		WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/android")
 
 	# Support for default target.
 	if(PB_ANDROID_NDK)
 		add_dependencies(ProjectBuildNDK ProjectSetup)
 		add_dependencies(ProjectBuild ProjectBuildNDK)
-
 		set_property(TARGET ProjectBuildNDK PROPERTY FOLDER ProjectBuild)
 	else()
 		add_dependencies(ProjectBuild ProjectSetup)

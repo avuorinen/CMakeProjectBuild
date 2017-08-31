@@ -1455,6 +1455,9 @@ set( CMAKE_SHARED_LINKER_FLAGS "${ANDROID_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FL
 set( CMAKE_MODULE_LINKER_FLAGS "${ANDROID_LINKER_FLAGS} ${CMAKE_MODULE_LINKER_FLAGS}" )
 set( CMAKE_EXE_LINKER_FLAGS    "${ANDROID_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" )
 
+set( CMAKE_SYSROOT "${ANDROID_SYSROOT}") # So times, compiler ignores --sysroot variable, this fixes that issue.
+
+
 if( MIPS AND BUILD_WITH_ANDROID_NDK AND ANDROID_NDK_RELEASE STREQUAL "r8" )
  set( CMAKE_SHARED_LINKER_FLAGS "-Wl,-T,${ANDROID_NDK_TOOLCHAINS_PATH}/${ANDROID_GCC_TOOLCHAIN_NAME}/mipself.xsc ${CMAKE_SHARED_LINKER_FLAGS}" )
  set( CMAKE_MODULE_LINKER_FLAGS "-Wl,-T,${ANDROID_NDK_TOOLCHAINS_PATH}/${ANDROID_GCC_TOOLCHAIN_NAME}/mipself.xsc ${CMAKE_MODULE_LINKER_FLAGS}" )
@@ -1492,12 +1495,16 @@ if( DEFINED ANDROID_EXCEPTIONS AND ANDROID_STL_FORCE_FEATURES )
 endif()
 
 # global includes and link directories
-include_directories( SYSTEM "${ANDROID_SYSROOT}/usr/include" ${ANDROID_STL_INCLUDE_DIRS} )
+include_directories( include_directories "${ANDROID_SYSROOT}/usr/include" ${ANDROID_STL_INCLUDE_DIRS} )
+#link_directories( "${ANDROID_SYSROOT}/usr/lib" ) # Enable this, if compiler doesn't find -llog, etc. libraries.
+
 get_filename_component(__android_install_path "${CMAKE_INSTALL_PREFIX}/libs/${ANDROID_NDK_ABI_NAME}" ABSOLUTE) # avoid CMP0015 policy warning
 link_directories( "${__android_install_path}" )
 
+
 # detect if need link crtbegin_so.o explicitly
 if( NOT DEFINED ANDROID_EXPLICIT_CRT_LINK )
+
  set( __cmd "${CMAKE_CXX_CREATE_SHARED_LIBRARY}" )
  string( REPLACE "<CMAKE_CXX_COMPILER>" "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1}" __cmd "${__cmd}" )
  string( REPLACE "<CMAKE_C_COMPILER>"   "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILER_ARG1}"   __cmd "${__cmd}" )
@@ -1510,7 +1517,9 @@ if( NOT DEFINED ANDROID_EXPLICIT_CRT_LINK )
  string( REPLACE "<TARGET>" "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/toolchain_crtlink_test.so" __cmd "${__cmd}" )
  string( REPLACE "<OBJECTS>" "\"${ANDROID_SYSROOT}/usr/lib/crtbegin_so.o\"" __cmd "${__cmd}" )
  string( REPLACE "<LINK_LIBRARIES>" "" __cmd "${__cmd}" )
+
  separate_arguments( __cmd )
+
  foreach( __var ANDROID_NDK ANDROID_NDK_TOOLCHAINS_PATH ANDROID_STANDALONE_TOOLCHAIN )
   if( ${__var} )
    set( __tmp "${${__var}}" )
@@ -1518,14 +1527,18 @@ if( NOT DEFINED ANDROID_EXPLICIT_CRT_LINK )
    string( REPLACE "${__tmp}" "${${__var}}" __cmd "${__cmd}")
   endif()
  endforeach()
+
  string( REPLACE "'" "" __cmd "${__cmd}" )
  string( REPLACE "\"" "" __cmd "${__cmd}" )
- execute_process( COMMAND ${__cmd} RESULT_VARIABLE __cmd_result OUTPUT_QUIET ERROR_QUIET )
+
+ execute_process( COMMAND ${__cmd} RESULT_VARIABLE __cmd_result OUTPUT_QUIET ERROR_QUIET)
+
  if( __cmd_result EQUAL 0 )
   set( ANDROID_EXPLICIT_CRT_LINK ON )
  else()
   set( ANDROID_EXPLICIT_CRT_LINK OFF )
  endif()
+
 endif()
 
 if( ANDROID_EXPLICIT_CRT_LINK )
@@ -1667,6 +1680,25 @@ if( CMAKE_GENERATOR MATCHES "Ninja" AND CMAKE_HOST_WIN32 )
  # unset( CMAKE_COMPILER_IS_MINGW ) # can't unset because CMake does not convert back-slashes in response files without it
  unset( MINGW )
 endif()
+
+
+# Debug Information
+message(STATUS "\n=== Android Debug ===\n")
+
+message(STATUS "Android: ${ANDROID_SYSROOT}")
+message(STATUS "Android Toolchain: ${ANDROID_TOOLCHAIN_ROOT}")
+message(STATUS "Android STL: ${__libstl}")
+
+message(STATUS "\nAndroid STL Includes\n----------------------")
+
+
+foreach(STL_INCL ${ANDROID_STL_INCLUDE_DIRS})
+
+message(STATUS "${STL_INCL}")
+
+endforeach()
+
+message(STATUS "\n======================\n")
 
 
 # Variables controlling behavior or set by cmake toolchain:
