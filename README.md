@@ -58,7 +58,7 @@ Simple pipeline for building cross-platform CMake projects.
     * [x] C & CXX Flags
   * Callbacks
 
-  [Android Builidng](templates/Android/README.md)
+  [Android Builidng](Templates/Android/README.md)
 
 ### Android Build
 
