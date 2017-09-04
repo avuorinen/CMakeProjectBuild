@@ -32,8 +32,10 @@
 # Values #
 ##########
 
+#TODO: Generic system
+#TODO: Platforms. (Generic, Android, etc.)
+
 set(PB_USE_ANDROID_MK FALSE)
-set(PB_ANDROID_ABI "armeabi" "armeabi-v7a" "x86")
 
 if(ANDROID)
 	set(PB_ANDROID TRUE CACHE BOOL "" )
@@ -42,9 +44,9 @@ else()
 endif()
 
 if(PB_RECURSION)
-	set(PB_RECURSION TRUE CACHE BOOL "" )
+	set(PB_RECURSION TRUE CACHE BOOL "Sub Project" )
 else()
-	set(PB_MAIN TRUE CACHE BOOL "" )
+	set(PB_MAIN TRUE CACHE BOOL "Main Project" )
 endif()
 
 
@@ -52,23 +54,23 @@ endif()
 # Config #
 ##########
 
-set(PB_FORCE_PROJECT FALSE CACHE BOOL "" )
-set(PB_ANDROID FALSE CACHE BOOL "" )
-set(PB_ANDROID_TEMPLATE "${PROJECT_SOURCE_DIR}/android_template" CACHE PATH "")
-set(PB_ANDROID_NDK TRUE CACHE BOOL "" )
-set(PB_TOOLCHAIN "${CMAKE_TOOLCHAIN_FILE}" CACHE FILEPATH "" )
-set(PB_TARGET_GENERATOR "Unix Makefiles" CACHE STRING "")
-set(PB_RECURSION_FLAGS CACHE STRING "")
-set(PB_RECURSION_CXX_FLAGS CACHE STRING "")
-set(PB_RECURSION_C_FLAGS CACHE STRING "")
+set(PB_RELEASE FALSE CACHE BOOL "Release")
+set(PB_FLAGS CACHE STRING "General flags")
+set(PB_CXX_FLAGS CACHE STRING "C++ Compiler Flags")
+set(PB_C_FLAGS CACHE STRING "C Compiler Flags")
 
+set(PB_FORCE_PROJECT FALSE CACHE BOOL "Use root project ()" )
+
+if(PB_ANDROID OR ANDROID)
+
+set(PB_ANDROID_ABI "armeabi" "armeabi-v7a" "x86" CACHE STRING "Android ABI Targets")
 set(PB_ANDROID_API "9" CACHE STRING "Android API LEVEL")
 
 set(ANDROID_STL_VALUES
 	"none;system;system_re;gabi++_static;gabi++_shared;stlport_static;stlport_shared;gnustl_static;gnustl_shared;c++_static;c++_shared;"
 )
 
-set(PB_ANDROID_STL "gnustl_static" CACHE STRING "Android STL") # Use c++_static instead. (when working)
+set(PB_ANDROID_STL "c++_static" CACHE STRING "Android STL")
 set_property(CACHE PB_ANDROID_STL PROPERTY STRINGS ${ANDROID_STL_VALUES})
 
 set(ANDROID_BUILD_SYSTEMS
@@ -77,6 +79,15 @@ set(ANDROID_BUILD_SYSTEMS
 
 set(PB_ANDROID_BUILD_SYSTEM "gradlew installDebug" CACHE STRING "Android Build System")
 set_property(CACHE PB_ANDROID_BUILD_SYSTEM PROPERTY STRINGS ${ANDROID_BUILD_SYSTEMS})
+
+set(PB_ANDROID FALSE CACHE BOOL "Is Android Project" )
+set(PB_ANDROID_TEMPLATE "${PROJECT_SOURCE_DIR}/android_template" CACHE PATH "Android Project Template")
+set(PB_ANDROID_NDK TRUE CACHE BOOL "Call ndk-build when building" )
+
+endif()
+
+set(PB_TOOLCHAIN "${CMAKE_TOOLCHAIN_FILE}" CACHE FILEPATH "SubProject toolchain" )
+set(PB_TARGET_GENERATOR "Unix Makefiles" CACHE STRING "SubProject generator")
 
 
 ##########
@@ -121,31 +132,43 @@ macro(BuildBegin)
 			endif()
 
 			# Set Recursion flags
-			set(CMAKE_C_FLAGS "${PB_RECURSION_C_FLAGS}")
-			set(CMAKE_CXX_FLAGS "${PB_RECURSION_CXX_FLAGS}")
+			set(CMAKE_C_FLAGS "${PB_C_FLAGS}")
+			set(CMAKE_CXX_FLAGS "${PB_CXX_FLAGS}")
+
+			set(CMAKE_C_FLAGS_RELEASE "${PB_C_FLAGS}")
+			set(CMAKE_CXX_FLAGS_RELEASE "${PB_CXX_FLAGS}")
+
+			set(CMAKE_C_FLAGS_DEBUG "${PB_C_FLAGS}")
+			set(CMAKE_CXX_FLAGS_DEBUG "${PB_CXX_FLAGS}")
 
 		elseif(PB_MAIN)
 
 			set(BUILD_DIR ${PROJECT_BINARY_DIR})
 
-			add_custom_target(ProjectSetup)
-			add_custom_target(ProjectBuild)
-			add_custom_target(ProjectRun)
+			add_custom_target(PSetup)
+			add_custom_target(PBuild)
+			add_custom_target(PRun)
 
-			if(PB_ANDROID OR ANDROID)
-
-				BuildAndroid()
-
+			if(PB_CXX_FLAGS)
+				list(APPEND PB_FLAGS "-DPB_CXX_FLAGS=${PB_CXX_FLAGS}")
 			endif()
 
-			add_dependencies(ProjectRun ProjectBuild)
+			if(PB_C_FLAGS)
+				list(APPEND PB_FLAGS "-DPB_C_FLAGS=${PB_C_FLAGS}")
+			endif()
 
-			add_library(ProjectBuildHook SHARED)
-			message(STATUS "PB INFO: Don't bother about above warning about ProjectBuildHook, that is intended dirty hack for Make.")
-			set_target_properties(ProjectBuildHook PROPERTIES LINKER_LANGUAGE CXX)
-			add_dependencies(ProjectBuildHook ProjectBuild)
+			if(PB_ANDROID OR ANDROID)
+				BuildAndroid()
+			endif()
 
-			set_property(TARGET ProjectSetup ProjectBuild ProjectRun ProjectBuildHook PROPERTY FOLDER ProjectBuild)
+			add_dependencies(PRun PBuild)
+
+			add_library(PBuildHook SHARED)
+			message(STATUS "PB INFO: Don't bother about above warning about PBuildHook, that is intended dirty hack for Make dependencies.")
+			set_target_properties(PBuildHook PROPERTIES LINKER_LANGUAGE CXX)
+			add_dependencies(PBuildHook PBuild)
+
+			set_property(TARGET PSetup PBuild PRun PBuildHook PROPERTY FOLDER ProjectBuild)
 
 		endif()
 
@@ -254,7 +277,7 @@ endmacro(BuildNDK)
 macro(BuildAndroid)
 
 	if(PB_ANDROID_NDK)
-		add_custom_target(ProjectBuildNDK)
+		add_custom_target(PBuildNDK)
 	endif()
 
 	if(EXISTS "${PB_ANDROID_TEMPLATE}/AndroidManifest.xml" AND NOT EXISTS "${BUILD_DIR}/android/AndroidManifest.xml")
@@ -266,19 +289,19 @@ macro(BuildAndroid)
 
 	endif()
 
-	add_custom_command(TARGET ProjectSetup PRE_BUILD
+	add_custom_command(TARGET PSetup PRE_BUILD
 		COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Initializing projects..."
 		COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/android/jni/"
 		COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/android/libs"
 	)
 
 	# Option for this.
-	#add_custom_command(TARGET ProjectSetup PRE_BUILD
+	#add_custom_command(TARGET PSetup PRE_BUILD
 	#	COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/obj")
 
 
 	if(PB_ANDROID_NDK)
-		add_custom_command(TARGET ProjectBuildNDK PRE_BUILD
+		add_custom_command(TARGET PBuildNDK PRE_BUILD
 			COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Starting NDK building..."
 			COMMAND ndk-build
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/android")
@@ -286,7 +309,7 @@ macro(BuildAndroid)
 
 	foreach(ABI ${PB_ANDROID_ABI})
 
-		add_custom_command(TARGET ProjectSetup PRE_BUILD
+		add_custom_command(TARGET PSetup PRE_BUILD
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 
 		if(PB_DEBUG)
@@ -295,46 +318,46 @@ macro(BuildAndroid)
 			# TODO 'Generic' Project generation
 
 			set(PB_TARGET_GENERATOR ${CMAKE_GENERATOR})
-			add_custom_command(TARGET ProjectSetup PRE_BUILD
-				COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DANDROID_STL=${PB_ANDROID_STL} -DANDROID_NATIVE_API_LEVEL=${PB_ANDROID_API} -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI} -DOUTPUT_PATH=${PROJECT_BINARY_DIR}/libs/${ABI} -DCMAKE_BUILD_TYPE=Debug -DPB_RELEASE=${PB_RELEASE} ${PB_RECURSION_FLAGS}
+			add_custom_command(TARGET PSetup PRE_BUILD
+				COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DANDROID_STL=${PB_ANDROID_STL} -DANDROID_NATIVE_API_LEVEL=${PB_ANDROID_API} -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI} -DOUTPUT_PATH=${PROJECT_BINARY_DIR}/libs/${ABI} -DCMAKE_BUILD_TYPE=Debug -DPB_RELEASE=${PB_RELEASE} ${PB_FLAGS}
 				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 		else()
 
-			add_custom_command(TARGET ProjectSetup PRE_BUILD
-				COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DCMAKE_TOOLCHAIN_FILE=${PB_TOOLCHAIN} -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI} -DCMAKE_BUILD_TYPE=Release -DPB_RELEASE=${PB_RELEASE} -DANDROID_STL=${PB_ANDROID_STL} -DANDROID_NATIVE_API_LEVEL=${PB_ANDROID_API} ${PB_RECURSION_FLAGS}
+			add_custom_command(TARGET PSetup PRE_BUILD
+				COMMAND cmake -G "${PB_TARGET_GENERATOR}" "${PROJECT_SOURCE_DIR}/" -DCMAKE_TOOLCHAIN_FILE=${PB_TOOLCHAIN} -DPB_RECURSION=TRUE -DANDROID_ABI=${ABI} -DCMAKE_BUILD_TYPE=Release -DPB_RELEASE=${PB_RELEASE} -DANDROID_STL=${PB_ANDROID_STL} -DANDROID_NATIVE_API_LEVEL=${PB_ANDROID_API} ${PB_FLAGS}
 				WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 
 		endif()
 
-		add_custom_command(TARGET ProjectBuild PRE_BUILD
+		add_custom_command(TARGET PBuild PRE_BUILD
 			COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Updating projects..."
 			COMMAND cmake "."
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 
-		add_custom_command(TARGET ProjectBuild PRE_BUILD
+		add_custom_command(TARGET PBuild PRE_BUILD
 			COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Starting building..."
 			COMMAND cmake --build "."
 			WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/obj/${ABI}/")
 
-		add_custom_command(TARGET ProjectBuild PRE_BUILD
+		add_custom_command(TARGET PBuild PRE_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_BINARY_DIR}/obj/${ABI}/lib" "${PROJECT_BINARY_DIR}/android/libs/${ABI}")
 
 	endforeach()
 
 	# Option for this. (PB_Install)
 	SEPARATE_ARGUMENTS(PB_ANDROID_BUILD_SYSTEM)
-	add_custom_command(TARGET ProjectRun POST_BUILD
+	add_custom_command(TARGET PRun POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "ProjectBuild: Starting project..."
 		COMMAND ${PB_ANDROID_BUILD_SYSTEM}
 		WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/android")
 
 	# Support for default target.
 	if(PB_ANDROID_NDK)
-		add_dependencies(ProjectBuildNDK ProjectSetup)
-		add_dependencies(ProjectBuild ProjectBuildNDK)
-		set_property(TARGET ProjectBuildNDK PROPERTY FOLDER ProjectBuild)
+		add_dependencies(PBuildNDK PSetup)
+		add_dependencies(PBuild PBuildNDK)
+		set_property(TARGET PBuildNDK PROPERTY FOLDER ProjectBuild)
 	else()
-		add_dependencies(ProjectBuild ProjectSetup)
+		add_dependencies(PBuild PSetup)
 	endif()
 
 endmacro()

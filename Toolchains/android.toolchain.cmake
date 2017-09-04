@@ -1039,35 +1039,33 @@ if( BUILD_WITH_ANDROID_NDK )
    set( __libstl                "${__libstl}/libs/${ANDROID_NDK_ABI_NAME}/libstdc++.a" )
   endif()
 
- elseif(ANDROID_STL STREQUAL "c++_static")
-      set( ANDROID_STL_INCLUDE_DIRS
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libcxx/include"
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/include"
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/libcxxabi/include"
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/include"
-                        "${ANDROID_NDK}/sources/android/support/include"
-      )
+ elseif(ANDROID_STL MATCHES "c\\+\\+")
 
-      set( __libstl
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++.a"
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++_shared.a"
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++abi.a"
-      )
+	set( ANDROID_EXCEPTIONS       ON )
+	set( ANDROID_RTTI             ON )
 
- elseif(ANDROID_STL STREQUAL "c++_shared")
-     set( ANDROID_STL_INCLUDE_DIRS
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libcxx/include"
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/include"
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/libcxxabi/include"
-                        "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/include"
-                        "${ANDROID_NDK}/sources/android/support/include"
-     )
+	set( __libgnustl "${ANDROID_NDK}/sources/cxx-stl/gnu-libstdc++/${ANDROID_COMPILER_VERSION}" )
 
-     set( __libstl
-                       "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++.so"
-                       "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++_shared.so"
-                       "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++abi.a"
-     )
+    set( ANDROID_STL_INCLUDE_DIRS
+            "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libcxx/include"
+            "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/include"
+            "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/libcxxabi/include"
+            "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/include"
+            "${ANDROID_NDK}/sources/android/support/include"
+		    "${__libgnustl}/include"
+		    "${__libgnustl}/libs/${ANDROID_NDK_ABI_NAME}/include"
+		    "${__libgnustl}/include/backward"
+    )
+
+    set( __libstl "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++_static.a")
+
+    if(ANDROID_STL MATCHES "shared")
+        set(__libsupcxx "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++.so")
+    else()
+        set(__libsupcxx "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}/libc++.a")
+    endif()
+
+	link_directories( "${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${ANDROID_NDK_ABI_NAME}" )
 
  else()
   message( FATAL_ERROR "Unknown runtime: ${ANDROID_STL}" )
@@ -1104,7 +1102,6 @@ if( ANDROID_STL MATCHES "shared" AND DEFINED __libstl )
  string( REPLACE "_static.a" "_shared.so" __libstl "${__libstl}" )
  # TODO: check if .so file exists before the renaming
 endif()
-
 
 # ccache support
 __INIT_VARIABLE( _ndk_ccache NDK_CCACHE ENV_NDK_CCACHE )
@@ -1315,16 +1312,22 @@ else()
 endif()
 
 # STL
-if( EXISTS "${__libstl}" OR EXISTS "${__libsupcxx}" )
+if( EXISTS ${__libstl} OR EXISTS ${__libsupcxx} )
+
  if( EXISTS "${__libstl}" )
+
   set( CMAKE_CXX_CREATE_SHARED_LIBRARY "${CMAKE_CXX_CREATE_SHARED_LIBRARY} \"${__libstl}\"" )
   set( CMAKE_CXX_CREATE_SHARED_MODULE  "${CMAKE_CXX_CREATE_SHARED_MODULE} \"${__libstl}\"" )
   set( CMAKE_CXX_LINK_EXECUTABLE       "${CMAKE_CXX_LINK_EXECUTABLE} \"${__libstl}\"" )
+
  endif()
+
  if( EXISTS "${__libsupcxx}" )
+
   set( CMAKE_CXX_CREATE_SHARED_LIBRARY "${CMAKE_CXX_CREATE_SHARED_LIBRARY} \"${__libsupcxx}\"" )
   set( CMAKE_CXX_CREATE_SHARED_MODULE  "${CMAKE_CXX_CREATE_SHARED_MODULE} \"${__libsupcxx}\"" )
   set( CMAKE_CXX_LINK_EXECUTABLE       "${CMAKE_CXX_LINK_EXECUTABLE} \"${__libsupcxx}\"" )
+
   # C objects:
   set( CMAKE_C_CREATE_SHARED_LIBRARY "<CMAKE_C_COMPILER> <CMAKE_SHARED_LIBRARY_C_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS> <CMAKE_SHARED_LIBRARY_SONAME_C_FLAG><TARGET_SONAME> -o <TARGET> <OBJECTS> <LINK_LIBRARIES>" )
   set( CMAKE_C_CREATE_SHARED_MODULE  "<CMAKE_C_COMPILER> <CMAKE_SHARED_LIBRARY_C_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS> <CMAKE_SHARED_LIBRARY_SONAME_C_FLAG><TARGET_SONAME> -o <TARGET> <OBJECTS> <LINK_LIBRARIES>" )
@@ -1332,16 +1335,21 @@ if( EXISTS "${__libstl}" OR EXISTS "${__libsupcxx}" )
   set( CMAKE_C_CREATE_SHARED_LIBRARY "${CMAKE_C_CREATE_SHARED_LIBRARY} \"${__libsupcxx}\"" )
   set( CMAKE_C_CREATE_SHARED_MODULE  "${CMAKE_C_CREATE_SHARED_MODULE} \"${__libsupcxx}\"" )
   set( CMAKE_C_LINK_EXECUTABLE       "${CMAKE_C_LINK_EXECUTABLE} \"${__libsupcxx}\"" )
+
  endif()
+
  if( ANDROID_STL MATCHES "gnustl" )
   if( NOT EXISTS "${ANDROID_LIBM_PATH}" )
    set( ANDROID_LIBM_PATH -lm )
   endif()
+
   set( CMAKE_CXX_CREATE_SHARED_LIBRARY "${CMAKE_CXX_CREATE_SHARED_LIBRARY} ${ANDROID_LIBM_PATH}" )
   set( CMAKE_CXX_CREATE_SHARED_MODULE  "${CMAKE_CXX_CREATE_SHARED_MODULE} ${ANDROID_LIBM_PATH}" )
   set( CMAKE_CXX_LINK_EXECUTABLE       "${CMAKE_CXX_LINK_EXECUTABLE} ${ANDROID_LIBM_PATH}" )
+
  endif()
 endif()
+
 
 # variables controlling optional build flags
 if( ANDROID_NDK_RELEASE_NUM LESS 7000 ) # before r7
@@ -1427,6 +1435,7 @@ if( ANDROID_COMPILER_IS_CLANG )
  endif()
 endif()
 
+
 # cache flags
 set( CMAKE_CXX_FLAGS           ""                        CACHE STRING "c++ flags" )
 set( CMAKE_C_FLAGS             ""                        CACHE STRING "c flags" )
@@ -1447,7 +1456,7 @@ set( ANDROID_LINKER_FLAGS      "${ANDROID_LINKER_FLAGS}"      CACHE INTERNAL "An
 # finish flags
 set( CMAKE_CXX_FLAGS           "${ANDROID_CXX_FLAGS} ${CMAKE_CXX_FLAGS}" )
 set( CMAKE_C_FLAGS             "${ANDROID_CXX_FLAGS} ${CMAKE_C_FLAGS}" )
-set( CMAKE_CXX_FLAGS_RELEASE   "${ANDROID_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}" )
+set( CMAKE_CXX_FLAGS_RELEASE   "${ANDROID_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS}" )
 set( CMAKE_C_FLAGS_RELEASE     "${ANDROID_CXX_FLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}" )
 set( CMAKE_CXX_FLAGS_DEBUG     "${ANDROID_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}" )
 set( CMAKE_C_FLAGS_DEBUG       "${ANDROID_CXX_FLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}" )
@@ -1456,7 +1465,7 @@ set( CMAKE_MODULE_LINKER_FLAGS "${ANDROID_LINKER_FLAGS} ${CMAKE_MODULE_LINKER_FL
 set( CMAKE_EXE_LINKER_FLAGS    "${ANDROID_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" )
 
 set( CMAKE_SYSROOT "${ANDROID_SYSROOT}") # So times, compiler ignores --sysroot variable, this fixes that issue.
-
+#set( CMAKE_CXX_STANDARD_LIBRARIES_INIT "${CMAKE_CXX_STANDARD_LIBRARIES_INIT} ${__libstl}")
 
 if( MIPS AND BUILD_WITH_ANDROID_NDK AND ANDROID_NDK_RELEASE STREQUAL "r8" )
  set( CMAKE_SHARED_LINKER_FLAGS "-Wl,-T,${ANDROID_NDK_TOOLCHAINS_PATH}/${ANDROID_GCC_TOOLCHAIN_NAME}/mipself.xsc ${CMAKE_SHARED_LINKER_FLAGS}" )
@@ -1500,7 +1509,6 @@ include_directories( include_directories "${ANDROID_SYSROOT}/usr/include" ${ANDR
 
 get_filename_component(__android_install_path "${CMAKE_INSTALL_PREFIX}/libs/${ANDROID_NDK_ABI_NAME}" ABSOLUTE) # avoid CMP0015 policy warning
 link_directories( "${__android_install_path}" )
-
 
 # detect if need link crtbegin_so.o explicitly
 if( NOT DEFINED ANDROID_EXPLICIT_CRT_LINK )
@@ -1687,17 +1695,18 @@ message(STATUS "\n=== Android Debug ===\n")
 
 message(STATUS "Android: ${ANDROID_SYSROOT}")
 message(STATUS "Android Toolchain: ${ANDROID_TOOLCHAIN_ROOT}")
-message(STATUS "Android STL: ${__libstl}")
+#message(STATUS "Android CXX Flags: ${CMAKE_CXX_FLAGS}")
+#message(STATUS "Android Linker Flags: ${ANDROID_LINKER_FLAGS}")
 
 message(STATUS "\nAndroid STL Includes\n----------------------")
 
-
 foreach(STL_INCL ${ANDROID_STL_INCLUDE_DIRS})
-
-message(STATUS "${STL_INCL}")
-
+    message(STATUS "${STL_INCL}")
 endforeach()
 
+message(STATUS "\nAndroid STL Libraries\n----------------------")
+message(STATUS "${__libstl}")
+message(STATUS "${__libsupcxx}")
 message(STATUS "\n======================\n")
 
 

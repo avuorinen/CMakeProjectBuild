@@ -10,6 +10,17 @@ Simple pipeline for building cross-platform CMake projects.
 | LIBS            | Libraries, use CMake targets |
 | DEFINES         | Public Defines               |
 | DEFINES_PRIVATE | Private Defines              |
+| ARGS            | Arguments for commands       |
+
+
+### ARGS
+| Command            | Args                 | Description              |
+| :------------------|:---------------------|:-------------------------|
+| BuildApplication   | WIN32                | WinMain Entry            |
+|                    | MACOSX_BUNDLE        | OS X Application Bundle  |
+|                    | EXCLUDE_FROM_ALL     |                          |
+| BuildLibrary       | WIP                  | WIP                      |
+
 
 ## Commands
 
@@ -23,9 +34,10 @@ Simple pipeline for building cross-platform CMake projects.
 
 ### Custom Build Targets
 
-* ProjectSetup
-* ProjectBuild
-* ProjectRun
+* PSetup
+* PBuild
+* PRun
+* PBuildNDK (Android)
 
 ## Features
 
@@ -38,14 +50,15 @@ Simple pipeline for building cross-platform CMake projects.
 ### TODO
 
   * Examples
-    * Example Project
+    * [ ] Example Project
+    * [x] Android Templates
   * CMake Options
     * Android Version
   * Passing CMake variables
+    * [x] C & CXX Flags
   * Callbacks
 
   [Android Builidng](templates/Android/README.md)
-
 
 ### Android Build
 
@@ -115,7 +128,6 @@ set(LIBS Library)
 # Modified add_executable.
 BuildApplication(Example)
 ```
-
 
 
 ### Project Root/Library/CMakeLists.txt
