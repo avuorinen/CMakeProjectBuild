@@ -50,7 +50,7 @@ Simple pipeline for building cross-platform CMake projects.
 ### TODO
 
   * Examples
-    * [ ] Example Project
+    * [x] Example Project
     * [x] Android Templates
   * CMake Options
     * Android Version
