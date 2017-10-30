@@ -1,8 +1,13 @@
 # CMakeProjectBuild
 Simple pipeline for building cross-platform CMake projects.
 
-## Variables
+## Files
+- ProjectBuild.cmake
+- Toolchains
+- Platforms
 
+
+## Variables
 | Variable        | Description                  |
 | :-------------- | :--------------------------- |
 | SOURCES         | Source files                 |

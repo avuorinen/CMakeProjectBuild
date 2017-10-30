@@ -24,6 +24,11 @@ If you don't have android project you can use the *SDL_Project* as template or e
 ### Env
 
 * ANDROID_NDK
+    * Android NDK root
+* ANDROID_HOME
+    * Android SDK root 
+
+
 * Path
     * Android SDK/tools
     * Android SDK/platform-tools
@@ -31,7 +36,6 @@ If you don't have android project you can use the *SDL_Project* as template or e
     * Java/jre/bin
     * Apache Ant/bin
     * Make
-    * GCC Compiler (optional)
 
 ### CMake & Building
 
