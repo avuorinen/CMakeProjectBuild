@@ -6,6 +6,8 @@ Simple pipeline for building cross-platform CMake projects.
 - Toolchains
 - Platforms
 
+### Platforms
+  [Android Builidng](Templates/Android/README.md)
 
 ## Variables
 | Variable        | Description                  |
@@ -53,48 +55,8 @@ Simple pipeline for building cross-platform CMake projects.
     * Android Toolchain
 
 ### TODO
-
-  * Examples
-    * [x] Example Project
-    * [x] Android Templates
   * CMake Options
     * Android Version
-  * Passing CMake variables
-    * [x] C & CXX Flags
-  * Callbacks
-
-  [Android Builidng](Templates/Android/README.md)
-
-### Android Build
-
-#### Dependencies
-
-* Android SDK
-* Android NDK
-* **Apache Ant** or **Gradle**
-* Java JRE
-* Make
-    * example: GnuWin32
-* GCC Compiler (optional)
-    * Helps with Unix Makefiles
-
-#### Env
-
-* ANDROID_NDK
-* Path
-    * Android SDK/tools
-    * Android SDK/platform-tools
-    * Android NDK/build
-    * Java/jre/bin
-    * Apache Ant/bin
-    * Make
-    * GCC Compiler (optional)
-
-#### CMake & Building
-
-* Unix Makefiles
-* Use android.toolchain.cmake
-* make -j
 
 ## Example
 
