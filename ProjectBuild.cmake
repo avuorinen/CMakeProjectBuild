@@ -31,9 +31,7 @@ endif()
 
 include("${PB_ROOT}/Platforms/PB_Platforms.cmake")
 
-##########
-# Values #
-##########
+# Values 
 
 if(PB_RECURSION)
 	set(PB_RECURSION TRUE CACHE BOOL "Sub Project" )
@@ -41,10 +39,7 @@ else()
 	set(PB_MAIN TRUE CACHE BOOL "Main Project" )
 endif()
 
-##########
-# Config #
-##########
-
+# Config 
 
 set(PB_FLAGS CACHE STRING "General flags")
 set(PB_CXX_FLAGS CACHE STRING "C++ Compiler Flags")
@@ -56,9 +51,13 @@ set(PB-CONFIG_RELEASE FALSE CACHE BOOL "Release")
 set(PB-CONFIG_TOOLCHAIN "${CMAKE_TOOLCHAIN_FILE}" CACHE FILEPATH "SubProject toolchain" )
 set(PB-CONFIG_GENERATOR "Unix Makefiles" CACHE STRING "SubProject generator")
 
-##########
-# Macros #
-##########
+
+# Macros
+
+#macro(BuildPrint target timing color msg)
+#		add_custom_command(TARGET ${target} ${timing}
+#			COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --${color} "${msg}")
+#endmacro(BuildPrint target timing color msg)
 
 # BuildIgnore
 macro(BuildIgnore)
@@ -114,7 +113,6 @@ macro(BuildBegin)
 		elseif(PB_MAIN)
 
 			set(BUILD_DIR ${PROJECT_BINARY_DIR})
-
 			add_custom_target(PSetup)
 			add_custom_target(PBuild)
 			add_custom_target(PRun)

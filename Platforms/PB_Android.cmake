@@ -3,6 +3,9 @@ set(PB_CONFIG_NO_DEFAULTS true)
 set(PB_CONFIG_USE_BuildLibrary true)
 set(PB_CONFIG_USE_BuildTargetBegin true)
 
+set(PB-ANDROID_RENAME_APP TRUE CACHE BOOL "Rename Application")
+set(PB-ANDROID_APP_NAME "main" CACHE STRING "Application name")
+
 include("${PB_PLATFORM_DIR}/PB_Default.cmake")
 
 # Properties
@@ -34,6 +37,8 @@ set(PB-ANDROID FALSE CACHE BOOL "Is Android Project" )
 set(PB-ANDROID_TEMPLATE "${PROJECT_SOURCE_DIR}/android_template" CACHE PATH "Android Project Template")
 set(PB-ANDROID_NDK TRUE CACHE BOOL "Call ndk-build when building" )
 
+# Macros
+
 macro(BuildNative names)
 	separate_arguments(names)
 	BuildDummy("${names}")
@@ -42,6 +47,9 @@ endmacro(BuildNative names)
 
 # BuildApplication
 macro(BuildApplication name)
+	if(PB-ANDROID_RENAME_APP)
+		set(name ${PB-ANDROID_APP_NAME})
+	endif()
 	BuildLibrary(${name} SHARED ${SOURCES})
 endmacro(BuildApplication name)
 

@@ -46,7 +46,7 @@ macro(BuildLibrary_Default name type)
 	else()
 		add_library(${name} STATIC ${SOURCES})
 	endif()
-
+	
 	BuildTargetEnd(${name})
 
 endmacro(BuildLibrary_Default name)
